@@ -1,97 +1,163 @@
 <script>
+import {getUserId, clearUserId} from '../services/session.js'
+import ChatList from '../components/ChatList.vue'
+import UserAvatar from '../components/UserAvatar.vue'
+import ChatView from '../components/ChatView.vue'
+import MyProfilePanel from '../components/MyProfilePanel.vue'
+import NewChatPanel from '../components/NewChatPanel.vue'
+import NewGroupPanel from '../components/NewGroupPanel.vue'
+
+const refreshInterval = 2500;
+
 export default {
+	components: {ChatList, UserAvatar, ChatView, MyProfilePanel, NewChatPanel, NewGroupPanel},
 	data() {
 		return {
+			myId: getUserId(),
+			me: null,
+			conversations: [],
+			loaded: false,
+			leftPanel: 'chats',
 			errormsg: null,
-			loading: false,
-			saving: false,
-			name: null,
-			draft: '',
+			active: false,
+			timer: null,
 		}
 	},
+	computed: {
+		selectedId() {
+			const id = Number(this.$route.params.id);
+			return Number.isInteger(id) && id > 0 ? id : null;
+		},
+	},
+	watch: {
+		selectedId() {
+			this.refresh();
+		},
+	},
 	methods: {
-		// Read the name from the API. A 404 means no name has been stored yet.
-		async loadName() {
-			this.loading = true;
-			this.errormsg = null;
+		async refresh() {
 			try {
-				const response = await this.$axios.get("/name");
-				this.name = response.data.name;
-				this.draft = response.data.name;
+				const [profile, list] = await Promise.all([
+					this.$axios.get(`/users/${this.myId}`),
+					this.$axios.get("/conversations"),
+				]);
+				this.me = profile.data;
+				this.conversations = list.data;
+				this.errormsg = null;
 			} catch (e) {
-				if (e.response && e.response.status === 404) {
-					this.name = null;
-					this.draft = '';
-				} else {
-					this.errormsg = this.errorMessage(e);
+				if (!e.response) {
+					this.errormsg = "Impossibile contattare il server.";
+				} else if (e.response.status !== 401) {
+					this.errormsg = `Errore durante l'aggiornamento (errore ${e.response.status}).`;
 				}
 			}
-			this.loading = false;
+			this.loaded = true;
 		},
-		// Store the name through the API and update the page with the saved value.
-		async saveName() {
-			this.saving = true;
-			this.errormsg = null;
-			try {
-				const response = await this.$axios.put("/name", { name: this.draft });
-				this.name = response.data.name;
-				this.draft = response.data.name;
-			} catch (e) {
-				this.errormsg = this.errorMessage(e);
+		async poll() {
+			await this.refresh();
+			if (this.active) {
+				this.timer = setTimeout(this.poll, refreshInterval);
 			}
-			this.saving = false;
 		},
-		errorMessage(e) {
-			if (e.response) {
-				return `Request failed (HTTP ${e.response.status})`;
-			}
-			return e.toString();
+		panelDone() {
+			this.leftPanel = 'chats';
+			this.refresh();
+		},
+		logout() {
+			clearUserId();
+			this.$router.replace("/login");
 		},
 	},
 	mounted() {
-		this.loadName();
+		this.active = true;
+		this.poll();
+	},
+	beforeUnmount() {
+		this.active = false;
+		clearTimeout(this.timer);
 	},
 }
 </script>
 
 <template>
-	<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
-		<div>
-			<h1 class="h3 mb-1">Home page</h1>
-			<p class="text-body-secondary mb-0">Example of reading and writing data through the API.</p>
-		</div>
-		<button class="btn btn-outline-secondary btn-sm" type="button" :disabled="loading" @click="loadName">
-			<i class="bi bi-arrow-clockwise me-1"></i> Refresh
-		</button>
-	</div>
+	<div class="home d-flex" :class="{'chat-open': selectedId !== null}">
+		<aside class="chats-column d-flex flex-column border-end bg-body">
+			<MyProfilePanel v-if="leftPanel === 'profile'" :me="me" @back="leftPanel = 'chats'" @changed="refresh"
+				@logout="logout" />
+			<NewChatPanel v-else-if="leftPanel === 'newChat'" @back="leftPanel = 'chats'" @opened="panelDone" />
+			<NewGroupPanel v-else-if="leftPanel === 'newGroup'" @back="leftPanel = 'chats'" @created="panelDone" />
 
-	<ErrorMsg v-if="errormsg" :msg="errormsg"></ErrorMsg>
+			<header v-if="leftPanel === 'chats'" class="d-flex align-items-center gap-2 p-2 border-bottom">
+				<button type="button"
+					class="profile-summary d-flex align-items-center gap-2 border-0 bg-transparent p-0 text-start text-body"
+					title="Il tuo profilo" @click="leftPanel = 'profile'">
+					<UserAvatar :picture="me ? me.profilePicture : null" :name="me ? me.username : ''" :size="40" />
+					<span class="fw-semibold text-truncate">{{ me ? me.username : '' }}</span>
+				</button>
+				<div class="ms-auto d-flex gap-1">
+					<button class="btn btn-sm btn-outline-secondary" type="button" title="Nuova chat"
+						@click="leftPanel = 'newChat'">
+						<i class="bi bi-chat-text"></i>
+					</button>
+					<button class="btn btn-sm btn-outline-secondary" type="button" title="Nuovo gruppo"
+						@click="leftPanel = 'newGroup'">
+						<i class="bi bi-people"></i>
+					</button>
+					<button class="btn btn-sm btn-outline-secondary" type="button"
+						:title="$root.theme === 'dark' ? 'Tema chiaro' : 'Tema scuro'" @click="$root.toggleTheme()">
+						<i :class="$root.theme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars'"></i>
+					</button>
+					<button class="btn btn-sm btn-outline-secondary" type="button" title="Esci" @click="logout">
+						<i class="bi bi-box-arrow-right"></i>
+					</button>
+				</div>
+			</header>
 
-	<div class="card shadow-sm">
-		<div class="card-body">
-			<LoadingSpinner :loading="loading">
-				<p v-if="name === null" class="text-body-secondary">No name has been stored yet. Set one below.</p>
-				<p v-else class="mb-3">
-					The stored name is
-					<span class="badge text-bg-primary fs-6 ms-1">{{ name }}</span>
-				</p>
+			<ErrorMsg v-if="errormsg && leftPanel === 'chats'" :msg="errormsg" class="m-2"></ErrorMsg>
 
-				<form class="row g-2 align-items-center" @submit.prevent="saveName">
-					<label for="nameInput" class="col-auto col-form-label">Name</label>
-					<div class="col-sm-6 col-md-4">
-						<input id="nameInput" v-model="draft" type="text" class="form-control"
-							placeholder="Type a name..." maxlength="255">
-					</div>
-					<div class="col-auto">
-						<button type="submit" class="btn btn-primary" :disabled="saving || draft.trim() === ''">
-							<i class="bi bi-check-lg me-1"></i> Save
-						</button>
-					</div>
-				</form>
-			</LoadingSpinner>
-		</div>
+			<ChatList v-if="leftPanel === 'chats'" class="chats-list flex-grow-1" :conversations="conversations"
+				:selected-id="selectedId" :my-id="myId" :loaded="loaded" />
+		</aside>
+
+		<main class="conversation-column flex-grow-1 d-flex flex-column bg-body-tertiary">
+			<div v-if="selectedId === null" class="m-auto text-body-secondary">
+				Seleziona una chat per iniziare
+			</div>
+			<ChatView v-else :key="selectedId" :conversation-id="selectedId" :my-id="myId" @changed="refresh" />
+		</main>
 	</div>
 </template>
 
 <style>
+.home {
+	height: 100vh;
+	height: 100dvh;
+}
+
+.chats-column {
+	width: 380px;
+	flex-shrink: 0;
+}
+
+.chats-list {
+	min-height: 0;
+}
+
+.profile-summary {
+	min-width: 0;
+}
+
+@media (max-width: 767.98px) {
+	.chats-column {
+		width: 100%;
+	}
+
+	.home.chat-open .chats-column {
+		display: none !important;
+	}
+
+	.home:not(.chat-open) .conversation-column {
+		display: none !important;
+	}
+}
 </style>
