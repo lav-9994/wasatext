@@ -1,7 +1,19 @@
 /*
-Webapi is the executable for the main web server.
-It builds a web server around APIs from `service/api`.
-Webapi connects to external resources needed (database) and starts two web servers: the API web server, and the debug.
+Webapi is the executable for the WASAText backend.
+WASAtext is a web application for messaging where users can create their profile and log in, message
+directly with other users or create groups to chat with multiple users, set and modify a profile picture and description
+for both profiles and groups, send text messages, photos and files, forward reply and delete messages, and add reactions to them.
+Members of a group can add any other user at any time and exit the group at any time. Users can also see
+the status of the messages they send with one checkmark when received and two checkmarks when read.
+Furthermore, the server adds system messages that record specific events: when a conversation is first created,
+when a group is created, when users are added to a group after its initial creation, when they leave the group and finally
+when name description or picture of the group are changed.
+
+Webapi builds a web server around the APIs in `service/api`, which implements the specification in `doc/api.yaml`.
+Users log in with a simplified login (username only) and identify themselves in the other APIs with their user identifier in the
+"Authorization: Bearer" header. Data is stored in a SQLite database, whose path is set with the `--db-filename` flag.
+
+Webapi connects to external resources needed (database) and starts two web servers: the API web server and the debug.
 Everything is served via the API web server, except debug variables (/debug/vars) and profiler infos (pprof).
 
 Usage:
@@ -28,15 +40,16 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/api"
-	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/database"
-	"github.com/ardanlabs/conf/v3"
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/ardanlabs/conf/v3"
+	"github.com/lav-9994/wasatext/service/api"
+	"github.com/lav-9994/wasatext/service/database"
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/sirupsen/logrus"
 )
 
 // main is the program entry point. The only purpose of this function is to call run() and set the exit code if there is
@@ -79,7 +92,7 @@ func run() error {
 
 	// Start Database
 	logger.Println("initializing database support")
-	dbconn, err := sql.Open("sqlite3", cfg.DB.Filename)
+	dbconn, err := sql.Open("sqlite3", cfg.DB.Filename+"?_foreign_keys=1")
 	if err != nil {
 		logger.WithError(err).Error("error opening SQLite DB")
 		return fmt.Errorf("opening SQLite: %w", err)
@@ -178,8 +191,6 @@ func run() error {
 
 		// Log the status of this shutdown.
 		switch {
-		case sig == syscall.SIGSTOP:
-			return errors.New("integrity issue caused shutdown")
 		case err != nil:
 			return fmt.Errorf("could not stop server gracefully: %w", err)
 		}
