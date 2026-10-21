@@ -37,9 +37,11 @@ paths:
         content:
           application/json:
             schema:
+              description: Login request
               type: object
               properties:
                 name:
+                  description: Username of the user
                   type: string
                   example: Maria
                   pattern: '^.*?$'
@@ -54,9 +56,11 @@ paths:
           content:
             application/json:
               schema:
+                description: Login result
                 type: object
                 properties:
                   identifier:
+                    description: User identifier, to be sent as Bearer token
                     type: integer
                     example: 42
                 required:
@@ -78,15 +82,21 @@ paths:
           required: false
           description: Text to search in usernames
           schema:
+            description: Text to search
+            pattern: '^.*?$'
+            minLength: 1
             type: string
             maxLength: 16
             example: mar
       responses:
         "200":
-          description: List of matching users (possibly empty)
+          description: List of matching users which could also be empty
           content:
             application/json:
               schema:
+                description: List of users
+                minItems: 0
+                maxItems: 10000
                 type: array
                 items: { $ref: "#/components/schemas/User" }
         "401": { $ref: "#/components/responses/Unauthorized" }
@@ -103,9 +113,11 @@ paths:
         content:
           application/json:
             schema:
+              description: New username
               type: object
               properties:
                 username:
+                  description: New username
                   type: string
                   pattern: '^.*?$'
                   minLength: 3
@@ -135,12 +147,16 @@ paths:
         content:
           application/json:
             schema:
+              description: New profile picture
               type: object
               properties:
                 profilePicture:
+                  pattern: '^data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+\/]+=*$'
+                  minLength: 1
+                  maxLength: 7000000
                   type: string
                   description: Picture as a base64 data URL
-                  example: "data:image/png;base64,iVBORw0KGgo..."
+                  example: "data:image/png;base64,iVBORw0KGgo="
               required:
                 - profilePicture
       responses:
@@ -164,9 +180,13 @@ paths:
         content:
           application/json:
             schema:
+              description: New bio
               type: object
               properties:
                 bio:
+                  description: New bio (empty to remove it)
+                  pattern: '^[\s\S]*$'
+                  minLength: 0
                   type: string
                   maxLength: 150
                   example: "Computer science student"
@@ -216,6 +236,9 @@ paths:
           content:
             application/json:
               schema:
+                description: List of groups in common
+                minItems: 0
+                maxItems: 10000
                 type: array
                 items: { $ref: "#/components/schemas/ConversationPreview" }
         "401": { $ref: "#/components/responses/Unauthorized" }
@@ -237,6 +260,9 @@ paths:
           content:
             application/json:
               schema:
+                description: List of conversations
+                minItems: 0
+                maxItems: 10000
                 type: array
                 items: { $ref: "#/components/schemas/ConversationPreview" }
         "401": { $ref: "#/components/responses/Unauthorized" }
@@ -256,6 +282,7 @@ paths:
         content:
           application/json:
             schema:
+              description: User to start the conversation with
               type: object
               properties:
                 userId:
@@ -318,22 +345,28 @@ paths:
         content:
           application/json:
             schema:
+              description: Message to send
               type: object
               properties:
                 type:
+                  description: Kind of message
                   type: string
                   enum: [text, photo, file]
                   example: text
                 text:
+                  pattern: '^[\s\S]*$'
                   type: string
                   description: Message text, or caption for photos and files
                   minLength: 1
                   maxLength: 2000
                   example: "Ci vediamo alle 8?"
                 photo:
+                  pattern: '^data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+\/]+=*$'
+                  minLength: 1
+                  maxLength: 7000000
                   type: string
                   description: Photo as a base64 data URL (only for photo messages)
-                  example: "data:image/jpeg;base64,/9j/4AAQ..."
+                  example: "data:image/jpeg;base64,/9j/4AAQ"
                 file:
                   $ref: "#/components/schemas/Attachment"
                 inReplyTo:
@@ -391,6 +424,7 @@ paths:
         content:
           application/json:
             schema:
+              description: Destination of the forwarded message
               type: object
               properties:
                 conversationId:
@@ -427,9 +461,11 @@ paths:
         content:
           application/json:
             schema:
+              description: Reaction to add
               type: object
               properties:
                 emoji:
+                  description: Reaction emoji
                   type: string
                   enum: ["👍", "❤️", "😂", "😮", "😢", "🙏"]
                   example: "❤️"
@@ -472,6 +508,7 @@ paths:
         content:
           application/json:
             schema:
+              description: New group
               type: object
               properties:
                 name:
@@ -482,11 +519,13 @@ paths:
                   maxLength: 32
                   example: Amici WASA
                 members:
+                  maxItems: 499
                   type: array
                   description: Identifiers of the other users to add (at least one)
                   minItems: 1
                   uniqueItems: true
                   items:
+                    description: User identifier
                     type: integer
                     example: 3
               required:
@@ -518,14 +557,17 @@ paths:
         content:
           application/json:
             schema:
+              description: Users to add
               type: object
               properties:
                 userIds:
+                  maxItems: 499
                   type: array
                   description: Identifiers of the users to add
                   minItems: 1
                   uniqueItems: true
                   items:
+                    description: User identifier
                     type: integer
                     example: 5
               required:
@@ -568,9 +610,11 @@ paths:
         content:
           application/json:
             schema:
+              description: New group name
               type: object
               properties:
                 name:
+                  description: New group name
                   type: string
                   pattern: '^.*?$'
                   minLength: 1
@@ -599,12 +643,16 @@ paths:
         content:
           application/json:
             schema:
+              description: New group picture
               type: object
               properties:
                 picture:
+                  pattern: '^data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+\/]+=*$'
+                  minLength: 1
+                  maxLength: 7000000
                   type: string
                   description: Picture as a base64 data URL
-                  example: "data:image/png;base64,iVBORw0KGgo..."
+                  example: "data:image/png;base64,iVBORw0KGgo="
               required:
                 - picture
       responses:
@@ -630,9 +678,13 @@ paths:
         content:
           application/json:
             schema:
+              description: New group description
               type: object
               properties:
                 description:
+                  description: New group description (empty to remove it)
+                  pattern: '^[\s\S]*$'
+                  minLength: 0
                   type: string
                   maxLength: 150
                   example: "Il gruppo per il progetto WASA"
@@ -660,6 +712,7 @@ components:
       required: true
       description: User identifier
       schema:
+        description: User identifier
         type: integer
         example: 42
     conversationId:
@@ -668,6 +721,7 @@ components:
       required: true
       description: Conversation identifier
       schema:
+        description: Conversation identifier
         type: integer
         example: 7
     messageId:
@@ -676,6 +730,7 @@ components:
       required: true
       description: Message identifier
       schema:
+        description: Message identifier
         type: integer
         example: 15
     groupId:
@@ -684,6 +739,7 @@ components:
       required: true
       description: Group identifier (same as its conversation identifier)
       schema:
+        description: Group identifier
         type: integer
         example: 12
   responses:
@@ -718,10 +774,15 @@ components:
           maxLength: 16
           example: Maria
         profilePicture:
+          pattern: '^data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+\/]+=*$'
+          minLength: 1
+          maxLength: 7000000
           type: string
           description: Profile picture as a base64 data URL 
-          example: "data:image/png;base64,iVBORw0KGgo..."
+          example: "data:image/png;base64,iVBORw0KGgo="
         bio:
+          pattern: '^[\s\S]*$'
+          minLength: 1
           type: string
           description: Short user biography 
           maxLength: 150
@@ -766,20 +827,26 @@ components:
       description: A file attached to a message
       properties:
         name:
+          pattern: '^[^\/\\]+$'
           type: string
           description: Original file name
           minLength: 1
           maxLength: 255
           example: appunti.pdf
         mimeType:
+          pattern: '^[a-zA-Z0-9.+-]+\/[a-zA-Z0-9.+-]+$'
+          minLength: 3
+          maxLength: 255
           type: string
           description: Type of the file (MIME type)
           example: application/pdf
         data:
+          pattern: '^[A-Za-z0-9+\/]+=*$'
+          minLength: 1
           type: string
           description: File content as base64 (max 5 MB before encoding)
           maxLength: 7000000
-          example: "JVBERi0xLjQK..."
+          example: "JVBERi0xLjQK"
       required:
         - name
         - mimeType
@@ -814,15 +881,19 @@ components:
           enum: [text, photo, file, system]
           example: text
         text:
+          pattern: '^[\s\S]*$'
           type: string
           description: Message text, photo/file caption, or system message text
           minLength: 1
           maxLength: 2000
           example: "Ci vediamo alle 8?"
         photo:
+          pattern: '^data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+\/]+=*$'
+          minLength: 1
+          maxLength: 7000000
           type: string
           description: Photo as a base64 data URL (only for photo messages)
-          example: "data:image/jpeg;base64,/9j/4AAQ..."
+          example: "data:image/jpeg;base64,/9j/4AAQ"
         file:
           $ref: "#/components/schemas/Attachment"
         inReplyTo:
@@ -846,6 +917,8 @@ components:
           enum: [sent, received, read]
           example: read
         comments:
+          minItems: 0
+          maxItems: 500
           type: array
           description: Reactions to this message
           items:
@@ -863,6 +936,7 @@ components:
       description: Summary of a message, shown in the conversation list
       properties:
         timestamp:
+          description: When the message was sent
           type: string
           format: date-time
           example: "2026-10-20T13:45:00Z"
@@ -874,10 +948,14 @@ components:
         sender:
           $ref: "#/components/schemas/UserSummary"
         text:
+          pattern: '^[\s\S]*$'
+          minLength: 1
+          maxLength: 51
           type: string
           description: Beginning of the text or caption (absent for photos/files without caption)
           example: "Ci vediamo alle 8?"
         deleted:
+          description: True if the message has been deleted
           type: boolean
           example: false
       required:
@@ -903,15 +981,19 @@ components:
           enum: [direct, group]
           example: direct
         displayName:
+          pattern: '^.*?$'
           type: string
           description: Name to show (other user's username or group name)
           minLength: 1
           maxLength: 32
           example: Luca
         displayPicture:
+          pattern: '^data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+\/]+=*$'
+          minLength: 1
+          maxLength: 7000000
           type: string
           description: Picture to show, as base64 data URL (absent if not set)
-          example: "data:image/png;base64,iVBORw0KGgo..."
+          example: "data:image/png;base64,iVBORw0KGgo="
         lastMessage:
           $ref: "#/components/schemas/MessagePreview"
       required:
@@ -930,20 +1012,27 @@ components:
           description: Unique conversation identifier
           example: 7
         type:
+          description: Direct conversation between two users or in a group
           type: string
           enum: [direct, group]
           example: group
         displayName:
+          pattern: '^.*?$'
           type: string
           description: Name to show (other user's username or group name)
           minLength: 1
           maxLength: 32
           example: Amici WASA
         displayPicture:
+          pattern: '^data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+\/]+=*$'
+          minLength: 1
+          maxLength: 7000000
           type: string
           description: Picture to show, as base64 data URL (absent if not set)
-          example: "data:image/png;base64,iVBORw0KGgo..."
+          example: "data:image/png;base64,iVBORw0KGgo="
         description:
+          pattern: '^[\s\S]*$'
+          minLength: 1
           type: string
           description: Group description (only for groups, absent if not set)
           maxLength: 150
@@ -951,11 +1040,15 @@ components:
         creator:
           $ref: "#/components/schemas/UserSummary"
         members:
+          minItems: 1
+          maxItems: 500
           type: array
           description: All participants, including the current user
           items:
             $ref: "#/components/schemas/User"
         messages:
+          minItems: 1
+          maxItems: 100000
           type: array
           description: Messages in reverse chronological order (newest first)
           items:
