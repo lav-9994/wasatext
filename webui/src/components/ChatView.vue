@@ -105,12 +105,9 @@ export default {
 			}
 			return `${action} non riuscito (errore ${e.response.status}).`;
 		},
-		messageUrl(message) {
-			return `/conversations/${this.conversationId}/messages/${message.id}`;
-		},
 		async react(message, emoji) {
 			try {
-				await this.$axios.put(`${this.messageUrl(message)}/comments/me`, {emoji: emoji});
+				await this.$axios.put(`/conversations/${this.conversationId}/messages/${message.id}/comments/me`, {emoji: emoji});
 				await this.afterChange(false);
 			} catch (e) {
 				this.errormsg = this.describe(e, "Reazione");
@@ -118,7 +115,7 @@ export default {
 		},
 		async unreact(message) {
 			try {
-				await this.$axios.delete(`${this.messageUrl(message)}/comments/me`);
+				await this.$axios.delete(`/conversations/${this.conversationId}/messages/${message.id}/comments/me`);
 				await this.afterChange(false);
 			} catch (e) {
 				this.errormsg = this.describe(e, "Rimozione della reazione");
@@ -129,7 +126,7 @@ export default {
 				return;
 			}
 			try {
-				await this.$axios.delete(this.messageUrl(message));
+				await this.$axios.delete(`/conversations/${this.conversationId}/messages/${message.id}`);
 				await this.afterChange(false);
 			} catch (e) {
 				this.errormsg = this.describe(e, "Eliminazione");

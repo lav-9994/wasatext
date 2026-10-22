@@ -23,9 +23,6 @@ export default {
 		}
 	},
 	computed: {
-		groupUrl() {
-			return `/groups/${this.conversation.id}`;
-		},
 		nameLength() {
 			return [...this.nameDraft.trim()].length;
 		},
@@ -57,7 +54,7 @@ export default {
 			this.saving = true;
 			this.errormsg = null;
 			try {
-				await this.$axios.put(`${this.groupUrl}/name`, {name: this.nameDraft.trim()});
+				await this.$axios.put(`/groups/${this.conversation.id}/name`, {name: this.nameDraft.trim()});
 				this.editingName = false;
 				this.$emit('changed');
 			} catch (e) {
@@ -76,7 +73,7 @@ export default {
 			this.saving = true;
 			this.errormsg = null;
 			try {
-				await this.$axios.put(`${this.groupUrl}/description`, {description: this.descriptionDraft.trim()});
+				await this.$axios.put(`/groups/${this.conversation.id}/description`, {description: this.descriptionDraft.trim()});
 				this.editingDescription = false;
 				this.$emit('changed');
 			} catch (e) {
@@ -100,7 +97,7 @@ export default {
 			this.saving = true;
 			try {
 				const picture = await readAsDataURL(chosen);
-				await this.$axios.put(`${this.groupUrl}/photo`, {picture: picture}, {timeout: 60000});
+				await this.$axios.put(`/groups/${this.conversation.id}/photo`, {picture: picture}, {timeout: 60000});
 				this.$emit('changed');
 			} catch (e) {
 				this.errormsg = this.describe(e, "Caricamento della foto");
@@ -126,7 +123,7 @@ export default {
 			this.saving = true;
 			this.errormsg = null;
 			try {
-				await this.$axios.post(`${this.groupUrl}/members`, {userIds: this.toAdd.map((u) => u.id)});
+				await this.$axios.post(`/groups/${this.conversation.id}/members`, {userIds: this.toAdd.map((u) => u.id)});
 				this.adding = false;
 				this.$emit('changed');
 			} catch (e) {
@@ -141,7 +138,7 @@ export default {
 			this.saving = true;
 			this.errormsg = null;
 			try {
-				await this.$axios.delete(`${this.groupUrl}/members/me`);
+				await this.$axios.delete(`/groups/${this.conversation.id}/members/me`);
 				this.$emit('changed');
 				this.$router.push("/");
 			} catch (e) {
