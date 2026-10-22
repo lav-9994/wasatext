@@ -1,0 +1,14 @@
+FROM golang:1.27-trixie AS builder
+
+WORKDIR /src
+COPY . .
+RUN go build -o /app/webapi ./cmd/webapi
+
+FROM debian:trixie-slim
+
+WORKDIR /app
+COPY --from=builder /app/webapi /app/webapi
+
+EXPOSE 3000
+
+CMD ["/app/webapi"]
